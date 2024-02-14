@@ -3,8 +3,14 @@ from importlib import reload
 import logging
 
 from pandas import DataFrame
+import sys
+from pathlib import Path
 
+current_dir = Path(__file__).resolve().parent
+parent_dir = current_dir.parent
+sys.path.append(str(parent_dir))
 import constants
+
 from bandits.experiment_report import ExpReport
 from database.config_test_run import ConfigRunner
 from database.system_warmup import SysWarm
