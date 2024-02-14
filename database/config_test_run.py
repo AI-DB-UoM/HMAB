@@ -1,7 +1,7 @@
 import datetime
 import logging
 from importlib import reload
-
+import os
 import constants
 import shared.configs_v2 as configs
 from database import sql_connection, sql_helper_v3 as sql_helper
@@ -115,8 +115,8 @@ class ConfigRunner:
         connection = sql_connection.get_sql_connection()
 
         # Tuning Parameters
-        experiment_folder_path = constants.ROOT_DIR + constants.WORKLOADS_FOLDER + '\\'
-        config_file = experiment_folder_path + config_file_name
+        # experiment_folder_path = constants.WORKLOADS_FOLDER
+        config_file = os.path.join(constants.WORKLOADS_FOLDER, config_file_name)
 
         # Reading the config from the file
         with open(config_file) as f:

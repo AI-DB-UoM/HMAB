@@ -1,12 +1,19 @@
 import logging
 import os
-
+from pathlib import Path
 # ===============================  Program Related  ===============================
-DB_CONFIG = '\config\db.conf'
-EXPERIMENT_FOLDER = '\experiments'
-WORKLOADS_FOLDER = '\\resources\\workloads'
-EXPERIMENT_CONFIG = '\config\exp.conf'
+root_path = Path('./')
+config_folder = root_path / 'config'
+resources_folder = root_path / 'resources'
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_CONFIG = os.path.join(ROOT_DIR, 'config', 'db.conf')
+EXPERIMENT_FOLDER = str(root_path / 'experiments')
+WORKLOADS_FOLDER = os.path.join(ROOT_DIR, 'workloads') 
+EXPERIMENT_CONFIG = os.path.join(ROOT_DIR, 'config', 'exp.conf')
+# DB_CONFIG = '\config\db.conf'
+# EXPERIMENT_FOLDER = '\experiments'
+# WORKLOADS_FOLDER = '\\resources\\workloads'
+# EXPERIMENT_CONFIG = '\config\exp.conf'
 LOGGING_LEVEL = logging.INFO
 LOG_XML = False
 XML_FORMAT = 'sqlplan'  # xml or sqlplan

@@ -30,14 +30,14 @@ def get_queries_v2():
     """
     # Reading the configuration for given experiment ID
     exp_config = configparser.ConfigParser()
-    exp_config.read(constants.ROOT_DIR + constants.EXPERIMENT_CONFIG)
+    exp_config.read(constants.EXPERIMENT_CONFIG)
 
     # experiment id for the current run
     experiment_id = exp_config['general']['run_experiment']
     workload_file = str(exp_config[experiment_id]['workload_file'])
 
     queries = []
-    with open(constants.ROOT_DIR + workload_file) as f:
+    with open(os.path.join(constants.ROOT_DIR ,workload_file)) as f:
         line = f.readline()
         while line:
             queries.append(json.loads(line))
@@ -52,7 +52,7 @@ def get_query_properties():
     """
     # Reading the configuration for given experiment ID
     exp_config = configparser.ConfigParser()
-    exp_config.read(constants.ROOT_DIR + constants.EXPERIMENT_CONFIG)
+    exp_config.read(constants.EXPERIMENT_CONFIG)
 
     # experiment id for the current run
     experiment_id = exp_config['general']['run_experiment']
@@ -136,9 +136,9 @@ def change_experiment(exp_id):
     :param exp_id: id of the new experiment
     """
     exp_config = configparser.ConfigParser()
-    exp_config.read(constants.ROOT_DIR + constants.EXPERIMENT_CONFIG)
+    exp_config.read(constants.EXPERIMENT_CONFIG)
     exp_config['general']['run_experiment'] = exp_id
-    with open(constants.ROOT_DIR + constants.EXPERIMENT_CONFIG, 'w') as configfile:
+    with open(constants.EXPERIMENT_CONFIG, 'w') as configfile:
         exp_config.write(configfile)
 
 

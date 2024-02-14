@@ -2,7 +2,7 @@ import configparser
 import constants
 
 db_config = configparser.ConfigParser()
-db_config.read(constants.ROOT_DIR + constants.DB_CONFIG)
+db_config.read(constants.DB_CONFIG)
 db_type = db_config['SYSTEM']['db_type']
 
 

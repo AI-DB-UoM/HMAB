@@ -13,7 +13,7 @@ from database.qplan.query_plan import QueryPlan
 from database.table import Table
 
 db_config = configparser.ConfigParser()
-db_config.read(constants.ROOT_DIR + constants.DB_CONFIG)
+db_config.read(constants.DB_CONFIG)
 db_type = db_config['SYSTEM']['db_type']
 database = db_config[db_type]['database']
 

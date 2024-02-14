@@ -14,7 +14,7 @@ def get_sql_connection():
 
     # Reading the Database configurations
     db_config = configparser.ConfigParser()
-    db_config.read(constants.ROOT_DIR + constants.DB_CONFIG)
+    db_config.read(constants.DB_CONFIG)
     db_type = db_config['SYSTEM']['db_type']
     server = db_config[db_type]['server']
     database = db_config[db_type]['database']
@@ -38,7 +38,7 @@ def get_master_sql_connection():
 
     # Reading the Database configurations
     db_config = configparser.ConfigParser()
-    db_config.read(constants.ROOT_DIR + constants.DB_CONFIG)
+    db_config.read(constants.DB_CONFIG)
     db_type = db_config['SYSTEM']['db_type']
     server = db_config[db_type]['server']
     database = 'master'
