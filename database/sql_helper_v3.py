@@ -17,8 +17,9 @@ db_config.read(constants.DB_CONFIG)
 db_type = db_config['SYSTEM']['db_type']
 database = db_config[db_type]['database']
 
-table_scan_times_hyp = copy.deepcopy(constants.TABLE_SCAN_TIMES[database[:-4]])
-table_scan_times = copy.deepcopy(constants.TABLE_SCAN_TIMES[database[:-4]])
+
+table_scan_times_hyp = copy.deepcopy(constants.TABLE_SCAN_TIMES[database])
+table_scan_times = copy.deepcopy(constants.TABLE_SCAN_TIMES[database])
 
 tables_global = None
 pk_columns_dict = {}
@@ -834,7 +835,7 @@ def remove_all_non_clustered(connection, schema_name):
 
 
 def get_table_scan_times_structure():
-    query_table_scan_times = copy.deepcopy(constants.TABLE_SCAN_TIMES[database[:-4]])
+    query_table_scan_times = copy.deepcopy(constants.TABLE_SCAN_TIMES[database])
     return query_table_scan_times
 
 

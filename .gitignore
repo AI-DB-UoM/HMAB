@@ -132,3 +132,5 @@ dmypy.json
 /resources/workloads/temp_workload_optimal.sql
 
 .vscode/*
+
+test_db_connection.py

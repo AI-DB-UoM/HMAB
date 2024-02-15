@@ -10,6 +10,7 @@ DB_CONFIG = os.path.join(ROOT_DIR, 'config', 'db.conf')
 EXPERIMENT_FOLDER = str(root_path / 'experiments')
 WORKLOADS_FOLDER = os.path.join(ROOT_DIR, 'workloads') 
 EXPERIMENT_CONFIG = os.path.join(ROOT_DIR, 'config', 'exp.conf')
+RESOURCES_WORKLOADS = os.path.join(ROOT_DIR, 'resources', 'workloads')
 # DB_CONFIG = '\config\db.conf'
 # EXPERIMENT_FOLDER = '\experiments'
 # WORKLOADS_FOLDER = '\\resources\\workloads'

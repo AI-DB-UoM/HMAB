@@ -7,6 +7,7 @@ import seaborn as sns
 from pandas import DataFrame
 import xml.etree.ElementTree as ET
 from io import StringIO
+from pathlib import Path
 
 import constants
 
@@ -36,8 +37,11 @@ def get_queries_v2():
     experiment_id = exp_config['general']['run_experiment']
     workload_file = str(exp_config[experiment_id]['workload_file'])
 
+    path = Path(workload_file)
+    workload_file = str(path)
+
     queries = []
-    with open(os.path.join(constants.ROOT_DIR ,workload_file)) as f:
+    with open(os.path.join(constants.RESOURCES_WORKLOADS, workload_file)) as f:
         line = f.readline()
         while line:
             queries.append(json.loads(line))
