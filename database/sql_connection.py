@@ -18,11 +18,17 @@ def get_sql_connection():
     db_type = db_config['SYSTEM']['db_type']
     server = db_config[db_type]['server']
     database = db_config[db_type]['database']
+    port = db_config[db_type]['port']
+    password = db_config[db_type]['password']
+    user = db_config[db_type]['user']
 
     if db_type == 'MSSQL':
         driver = db_config[db_type]['driver']
+
         return pyodbc.connect(
-            r'Driver=' + driver + ';Server=' + server + ';Database=' + database + ';Trusted_Connection=yes;')
+            r'DRIVER=' + driver +';SERVER=' + server + ',' + port + ';UID=' + user + ';PWD=' + password + ';DATABASE=' + database)
+        # return pyodbc.connect(
+        #     r'Driver=' + driver + ';Server=' + server + ';port=' + port + ';password=' + password + ';Database=' + database + ';Trusted_Connection=yes;')
     elif db_type == 'PG':
         user = db_config[db_type]['user']
         password = db_config[db_type]['password']

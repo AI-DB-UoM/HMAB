@@ -4,6 +4,17 @@
 ## Steps:
 
  1. **Setup the Database** - In this example we use 10GB TPC-DS http://www.tpc.org/tpcds/
+
+1.1 How to generate after compile TPC-DS.
+```bash
+./dsdgen -SCALE 1 -DIR ./data -VERBOSE Y -FORCE Y
+```
+
+1.2 Remove the last delimiter '|' of each .dat file.
+```bash
+sh remove_unexpected_delimiter.sh
+```
+
  2. **Set up the DB config file** (config/db.conf). We have implemented the MSSQL DB layer, for any other DB you have to implement it. Set the 'server'  and 'database'.
 
     [SYSTEM]  
