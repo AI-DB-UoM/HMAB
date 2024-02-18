@@ -134,3 +134,4 @@ dmypy.json
 .vscode/*
 
 test_db_connection.py
+docker_help.md
