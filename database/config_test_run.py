@@ -14,7 +14,7 @@ class ConfigRunner:
         reload(configs)
         # configuring the logger
         logging.basicConfig(
-            filename=helper.get_experiment_folder_path(configs.experiment_id) + configs.experiment_id + '.log',
+            filename=os.path.join(helper.get_experiment_folder_path(configs.experiment_id), configs.experiment_id + '.log'),
             filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
         logging.getLogger().setLevel(constants.LOGGING_LEVEL)
         next_workload_shift = 0

@@ -3,6 +3,7 @@ import logging
 import operator
 import pprint
 from importlib import reload
+import os
 
 import numpy
 from pandas import DataFrame
@@ -29,7 +30,7 @@ class BaseSimulator:
     def __init__(self):
         # configuring the logger
         logging.basicConfig(
-            filename=helper.get_experiment_folder_path(configs.experiment_id) + configs.experiment_id + '.log',
+            filename=os.path.join(helper.get_experiment_folder_path(configs.experiment_id), configs.experiment_id + '.log'),
             filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -60,7 +61,7 @@ class Simulator(BaseSimulator):
         hyp_check_rounds = 25
 
         # reset hyp query log
-        hyp_file_path = helper.get_experiment_folder_path(configs.experiment_id) + configs.experiment_id + '_hyp.sql'
+        hyp_file_path = os.path.join(helper.get_experiment_folder_path(configs.experiment_id), configs.experiment_id + '_hyp.sql')
 
         # Get all the columns from the database
         bandits_dict = {}
@@ -367,13 +368,14 @@ class Simulator(BaseSimulator):
 
             total_time += total_round_time
 
-            print(f"current total {t}: ", total_time)
+            print(f"current total {t}: ", total_time, ", this round: ", total_round_time)
         logging.info("Time taken by bandit for " + str(configs.rounds) + " rounds: " + str(total_time))
         logging.info("\n\nIndex Usage Counts:\n" + pp.pformat(
             sorted(arm_selection_count.items(), key=operator.itemgetter(1), reverse=True)))
         sql_connection.close_sql_connection(self.connection)
         sql_helper.clean_up_routine(sql_connection)
         self.connection = sql_connection.get_sql_connection()
+        print("Finish simulator run")
         return results, total_time
 
 

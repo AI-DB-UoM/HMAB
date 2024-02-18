@@ -4,6 +4,7 @@ import logging
 
 from pandas import DataFrame
 import sys
+import os
 from pathlib import Path
 
 current_dir = Path(__file__).resolve().parent
@@ -60,12 +61,12 @@ for i in range(len(exp_id_list)):
     # configuring the logger
     if not FROM_FILE:
         logging.basicConfig(
-            filename=experiment_folder_path + configs.experiment_id + '.log',
+            filename=os.path.join(experiment_folder_path, configs.experiment_id + '.log'),
             filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
         logging.getLogger().setLevel(constants.LOGGING_LEVEL)
 
     if FROM_FILE:
-        with open(experiment_folder_path + "reports.pickle", "rb") as f:
+        with open(os.path.join(experiment_folder_path, "reports.pickle"), "rb") as f:
             exp_report_list = exp_report_list + pickle.load(f)
     else:
         print("Currently running: ", exp_id_list[i])
@@ -179,13 +180,14 @@ for i in range(len(exp_id_list)):
                     results, total_workload_time = simulator.run()
                     temp = DataFrame(results, columns=[constants.DF_COL_BATCH, constants.DF_COL_MEASURE_NAME,
                                                        constants.DF_COL_MEASURE_VALUE])
-                    temp.append([-1, constants.MEASURE_TOTAL_WORKLOAD_TIME, total_workload_time])
+                    temp._append([-1, constants.MEASURE_TOTAL_WORKLOAD_TIME, total_workload_time])
                     temp[constants.DF_COL_REP] = r
                     exp_report_mab.add_data_list(temp)
+                    print("Values have been added!")
                 exp_report_list.append(exp_report_mab)
 
         # Save results
-        with open(experiment_folder_path + "reports.pickle", "wb") as f:
+        with open(os.path.join(experiment_folder_path, "reports.pickle"), "wb") as f:
             pickle.dump(exp_report_list, f)
 
         if SEPARATE_EXPERIMENTS:

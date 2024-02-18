@@ -1,5 +1,5 @@
 import pickle
-
+import os
 from pandas import DataFrame
 
 from shared import helper_v2 as helper
@@ -17,7 +17,7 @@ def create_data_csv(exp_id, exp_report_list_inner):
     :return:
     """
     separator = DataFrame({' ': ' ', 'Experiment': [exp_id]})
-    separator['Experiment'].to_csv(helper.get_experiment_folder_path(exp_id) + 'data.csv', mode='w',
+    separator['Experiment'].to_csv(os.path.join(helper.get_experiment_folder_path(exp_id), 'data.csv'), mode='w',
                                    index=False, header='True')
     for exp_report in exp_report_list_inner:
         data = exp_report.data
@@ -35,7 +35,7 @@ def create_data_csv(exp_id, exp_report_list_inner):
         if 'Memory Cost' in data.index:
             data = data.drop(['Memory Cost'])
         data['Total'] = data.sum(axis=1)
-        separator['Component Name'].to_csv(helper.get_experiment_folder_path(exp_id) + 'data.csv', mode='a', index=False, header='True')
+        separator['Component Name'].to_csv(os.path.join(helper.get_experiment_folder_path(exp_id), 'data.csv'), mode='a', index=False, header='True')
         data.to_csv(helper.get_experiment_folder_path(exp_id) + 'data.csv', mode='a', header='True')
 
 
@@ -43,6 +43,6 @@ for i in range(len(exp_id_list)):
     print(exp_id_list[i])
     experiment_folder_path = helper.get_experiment_folder_path(exp_id_list[i])
 
-    with open(experiment_folder_path + "reports.pickle", "rb") as f:
+    with open(os.path.join(experiment_folder_path, "reports.pickle"), "rb") as f:
         exp_report_list = pickle.load(f)
     create_data_csv(exp_id_list[i], exp_report_list)

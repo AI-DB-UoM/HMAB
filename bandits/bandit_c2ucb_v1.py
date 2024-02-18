@@ -48,13 +48,27 @@ class C3UCB(C3UCBBaseBandit):
         self.context_vectors = context_vectors
 
         # find the upper bound for every arm
+        # for i in range(len(self.arms)):
+        #     creation_cost = weight_vector[1] * self.context_vectors[i][1]
+        #     average_reward = numpy.asscalar(weight_vector.transpose() @ self.context_vectors[i]) - creation_cost
+        #     temp_upper_bound = average_reward + self.hyper_alpha * numpy.sqrt(
+        #         numpy.asscalar(self.context_vectors[i].transpose() @ v_inverse @ self.context_vectors[i]))
+        #     temp_upper_bound = temp_upper_bound + (creation_cost / constants.CREATION_COST_REDUCTION_FACTOR)
+        #     self.upper_bounds.append(temp_upper_bound)
+
+
         for i in range(len(self.arms)):
             creation_cost = weight_vector[1] * self.context_vectors[i][1]
-            average_reward = numpy.asscalar(weight_vector.transpose() @ self.context_vectors[i]) - creation_cost
+            # Directly access the scalar value of the numpy array
+            average_reward = (weight_vector.transpose() @ self.context_vectors[i]).item() - creation_cost
+            # Calculate the upper bound
             temp_upper_bound = average_reward + self.hyper_alpha * numpy.sqrt(
-                numpy.asscalar(self.context_vectors[i].transpose() @ v_inverse @ self.context_vectors[i]))
-            temp_upper_bound = temp_upper_bound + (creation_cost / constants.CREATION_COST_REDUCTION_FACTOR)
+                (self.context_vectors[i].transpose() @ v_inverse @ self.context_vectors[i]).item())
+            # Adjust the upper bound by the creation cost reduction factor
+            temp_upper_bound += creation_cost / constants.CREATION_COST_REDUCTION_FACTOR
+            # Append the calculated upper bound to the list
             self.upper_bounds.append(temp_upper_bound)
+
 
         logging.debug(self.upper_bounds)
         return self.oracle.get_super_arm(self.upper_bounds, self.context_vectors, self.arms)
@@ -72,12 +86,25 @@ class C3UCB(C3UCBBaseBandit):
         self.context_vectors = context_vectors
 
         # find the upper bound for every arm
+        # for i in range(len(self.arms)):
+        #     creation_cost = (weight_vector[1] * self.context_vectors[i][1]) + (weight_vector[0] * self.context_vectors[i][0])
+        #     average_reward = numpy.asscalar(weight_vector.transpose() @ self.context_vectors[i]) - creation_cost
+        #     temp_upper_bound = average_reward + self.hyper_alpha * numpy.sqrt(
+        #         numpy.asscalar(self.context_vectors[i].transpose() @ v_inverse @ self.context_vectors[i]))
+        #     temp_upper_bound = temp_upper_bound + (creation_cost / constants.CREATION_COST_REDUCTION_FACTOR)
+        #     self.upper_bounds.append(temp_upper_bound)
+
         for i in range(len(self.arms)):
+            # Calculate the creation cost based on the context vectors and weight vector
             creation_cost = (weight_vector[1] * self.context_vectors[i][1]) + (weight_vector[0] * self.context_vectors[i][0])
-            average_reward = numpy.asscalar(weight_vector.transpose() @ self.context_vectors[i]) - creation_cost
+            # Use .item() to get the scalar value of the numpy array resulting from the matrix operation
+            average_reward = (weight_vector.transpose() @ self.context_vectors[i]).item() - creation_cost
+            # Calculate the temporary upper bound
             temp_upper_bound = average_reward + self.hyper_alpha * numpy.sqrt(
-                numpy.asscalar(self.context_vectors[i].transpose() @ v_inverse @ self.context_vectors[i]))
-            temp_upper_bound = temp_upper_bound + (creation_cost / constants.CREATION_COST_REDUCTION_FACTOR)
+                (self.context_vectors[i].transpose() @ v_inverse @ self.context_vectors[i]).item())
+            # Adjust the upper bound by the creation cost reduction factor
+            temp_upper_bound += creation_cost / constants.CREATION_COST_REDUCTION_FACTOR
+            # Append the calculated upper bound to the list of upper bounds
             self.upper_bounds.append(temp_upper_bound)
 
         self.hyper_alpha = self.hyper_alpha / constants.ALPHA_REDUCTION_RATE

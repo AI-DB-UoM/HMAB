@@ -45,7 +45,7 @@ class DTARunner:
 
         # setting up logging
         logging.basicConfig(
-            filename=helper.get_experiment_folder_path(configs.experiment_id) + configs.experiment_id + '.log',
+            filename=os.path.join(helper.get_experiment_folder_path(configs.experiment_id), configs.experiment_id + '.log'),
             filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
         logging.getLogger().setLevel(constants.LOGGING_LEVEL)
         logging.info(f"============= Starting TA session: {self.workload_type} =============")
@@ -201,10 +201,10 @@ class DTARunner:
         max_memory = configs.max_memory
         session_name = configs.experiment_id + self.workload_type + "_" + str(uuid.uuid4())
         experiment_folder_path = helper.get_experiment_folder_path(configs.experiment_id)
-        recommendation_output_file = experiment_folder_path + configs.experiment_id + "_" + str(workload_shift) + "_" + \
-            str(self.rep) + "_" + self.workload_type + "_dta_recommendation.sql"
-        session_output_xml_file = experiment_folder_path + configs.experiment_id + "_" + str(workload_shift) + "_" + \
-            str(self.rep) + "_" + self.workload_type + "_dta_session_output.xml"
+        recommendation_output_file = os.path.join(experiment_folder_path, configs.experiment_id + "_" + str(workload_shift) + "_" + \
+            str(self.rep) + "_" + self.workload_type + "_dta_recommendation.sql")
+        session_output_xml_file = os.path.join(experiment_folder_path, configs.experiment_id + "_" + str(workload_shift) + "_" + \
+            str(self.rep) + "_" + self.workload_type + "_dta_session_output.xml")
         if self.workload_type == constants.TA_WORKLOAD_TYPE_FULL:
             self.generate_full_workload_file()
             workload_file = self.workload_file_full

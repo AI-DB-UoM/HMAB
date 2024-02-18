@@ -1,5 +1,6 @@
 import logging
 from importlib import reload
+import os 
 
 import constants
 import shared.configs_v2 as configs
@@ -12,7 +13,7 @@ class SysWarm:
     def run():
         reload(configs)
         logging.basicConfig(
-            filename=helper.get_experiment_folder_path(configs.experiment_id) + configs.experiment_id + '.log',
+            filename=os.path.join(helper.get_experiment_folder_path(configs.experiment_id), configs.experiment_id + '.log'),
             filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
         logging.getLogger().setLevel(constants.LOGGING_LEVEL)
         logging.info("Starting System warming-up")

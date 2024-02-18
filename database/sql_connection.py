@@ -48,10 +48,17 @@ def get_master_sql_connection():
     db_type = db_config['SYSTEM']['db_type']
     server = db_config[db_type]['server']
     database = 'master'
+    
     driver = db_config[db_type]['driver']
+    database = db_config[db_type]['database']
+    port = db_config[db_type]['port']
+    password = db_config[db_type]['password']
+    user = db_config[db_type]['user']
 
+    # return pyodbc.connect(
+    #     r'Driver=' + driver + ';Server=' + server + ';Database=' + database + ';Trusted_Connection=yes;',autocommit=True)
     return pyodbc.connect(
-        r'Driver=' + driver + ';Server=' + server + ';Database=' + database + ';Trusted_Connection=yes;',autocommit=True)
+            r'DRIVER=' + driver +';SERVER=' + server + ',' + port + ';UID=' + user + ';PWD=' + password + ';DATABASE=' + database)
 
 
 def close_sql_connection(connection):

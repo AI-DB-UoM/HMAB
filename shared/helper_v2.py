@@ -2,6 +2,7 @@ import configparser
 import json
 import os
 
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from pandas import DataFrame
@@ -18,7 +19,7 @@ def get_experiment_folder_path(experiment_id):
     :param experiment_id: name of the experiment
     :return: file path as string
     """
-    experiment_folder_path = constants.ROOT_DIR + constants.EXPERIMENT_FOLDER + '\\' + experiment_id + '\\'
+    experiment_folder_path = os.path.join(constants.EXPERIMENT_FOLDER, experiment_id)
     if not os.path.exists(experiment_folder_path):
         os.makedirs(experiment_folder_path)
     return experiment_folder_path
@@ -83,14 +84,15 @@ def plot_exp_report(exp_id, exp_report_list, measurement_names, log_y=False):
             comps.append(exp_report.component_id)
 
         final_df = final_df[final_df[constants.DF_COL_MEASURE_NAME] == measurement_name]
+        final_df.replace([np.inf, -np.inf], np.nan, inplace=True)
         # Error style = 'band' / 'bars'
         sns_plot = sns.relplot(x=constants.DF_COL_BATCH, y=constants.DF_COL_MEASURE_VALUE, hue=constants.DF_COL_COMP_ID,
-                               kind="line", ci="sd", data=final_df, err_style="band")
+                               kind="line", errorbar="sd", data=final_df, err_style="band")
         if log_y:
             sns_plot.set(yscale="log")
         plot_title = measurement_name + " Comparison"
         sns_plot.set(xlabel=constants.DF_COL_BATCH, ylabel=measurement_name)
-        sns_plot.savefig(get_experiment_folder_path(exp_id) + plot_title + '.png')
+        sns_plot.savefig(os.path.join(get_experiment_folder_path(exp_id), plot_title + '.png'))
 
 
 def create_comparison_tables(exp_id, exp_report_list):
@@ -126,7 +128,7 @@ def create_comparison_tables(exp_id, exp_report_list):
         final_df.loc[len(final_df)] = [component, rounds, hyp_batch_time, recommend_time, creation_time, elapsed_time,
                                        analytical_time, transactional_time, total_workload_time]
 
-    final_df.round(4).to_csv(get_experiment_folder_path(exp_id) + 'comparison_table.csv')
+    final_df.round(4).to_csv(os.path.join(get_experiment_folder_path(exp_id), 'comparison_table.csv'))
 
 
 def get_avg_measure_value(data, measure_name, reps):
@@ -204,7 +206,7 @@ def log_query_xmls(experiment_id, query_objs, query_plans, round_num, component)
 
 
 def log_query_xml(experiment_id, q_id, query_xml, round_num, component):
-    xml_folder = get_experiment_folder_path(experiment_id) + 'xml' + '\\'
+    xml_folder = os.path.join(get_experiment_folder_path(experiment_id),  'xml')
     if not os.path.exists(xml_folder):
         os.makedirs(xml_folder)
     file_name = component + '_' + str(round_num) + '_' + str(q_id) + '.' + constants.XML_FORMAT
