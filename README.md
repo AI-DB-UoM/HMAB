@@ -15,6 +15,16 @@
 sh remove_unexpected_delimiter.sh
 ```
 
+*1.3 Mount data (for Docker)
+
+
+1.4 Load data
+```bash
+python load_data_to_dbs.py
+```
+
+
+
  2. **Set up the DB config file** (config/db.conf). We have implemented the MSSQL DB layer, for any other DB you have to implement it. Set the 'server'  and 'database'.
 
     [SYSTEM]  

@@ -137,3 +137,5 @@ test_db_connection.py
 docker_help.md
 
 /experiments/*
+
+.DS_Store

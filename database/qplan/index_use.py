@@ -116,6 +116,26 @@ class ViewRead(IndexRead):
                            table_cardinality)
         self.view_tables = view_tables
 
+class PGIndexRead(IndexUse):
+    def __init__(self, node_id, table, index, index_kind, act_elapsed_max, act_elapsed_sum, est_elapsed, act_cpu_max, act_cpu_sum, est_cpu,
+                 sub_tree_cost, act_rows_read, act_rows_output, est_rows_output):
+        """
+        Object to keep the measurements from index use
+
+        :param table: String, Table of the index
+        :param index: String, Index used
+        :param index_kind: String, Kind of the index Clustered / NonClustered
+        :param act_rows_read: Int, Actual rows read, there is no estimated value for rows read.
+        :param est_rows_read: Int, estimate read row count
+        :param table_cardinality: Float, cardinality of the table
+        """
+        IndexUse.__init__(self, node_id, act_elapsed_max, act_elapsed_sum, est_elapsed, act_cpu_max, act_cpu_sum,
+                          est_cpu, sub_tree_cost, act_rows_output, est_rows_output)
+        self.add_index(table, index, index_kind)
+        self.act_rows_read = act_rows_read
+        self.is_lookup = False
+        self.lookup_parent = None
+
 
 class Index:
     def __init__(self, table, index, index_kind):

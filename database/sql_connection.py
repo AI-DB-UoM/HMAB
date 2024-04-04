@@ -32,7 +32,7 @@ def get_sql_connection():
     elif db_type == 'PG':
         user = db_config[db_type]['user']
         password = db_config[db_type]['password']
-        return psycopg2.connect(host=server, database=database, user=user, password=password)
+        return psycopg2.connect(host=server, database=database.lower(), user=user, password=password, port=port)
 
 
 def get_master_sql_connection():
