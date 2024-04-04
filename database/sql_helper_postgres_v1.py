@@ -4,21 +4,26 @@ import datetime
 import logging
 from collections import defaultdict
 
+import datetime
+import psycopg2
+import psycopg2.extras
+
 import constants
 from database.column import Column
 from database.qplan.pgread import PGReadQueryPlan
 from database.table import Table
 
 db_config = configparser.ConfigParser()
-db_config.read(constants.ROOT_DIR + constants.DB_CONFIG)
+db_config.read(constants.DB_CONFIG)
 db_type = db_config['SYSTEM']['db_type']
 database = db_config[db_type]['database']
 
-table_scan_times_hyp = copy.deepcopy(constants.TABLE_SCAN_TIMES[database[:-4]])
-table_scan_times = copy.deepcopy(constants.TABLE_SCAN_TIMES[database[:-4]])
-
+table_scan_times_hyp = copy.deepcopy(constants.TABLE_SCAN_TIMES[database])
+table_scan_times = copy.deepcopy(constants.TABLE_SCAN_TIMES[database])
 tables_global = None
 pk_columns_dict = {}
+count_numbers = {}
+cache_hits = 0
 
 
 # ############################# TA functions #############################
@@ -74,6 +79,25 @@ def simple_execute(connection, query):
 
 
 # ############################# Core MAB functions ##############################
+
+def drop_v7(connection, schema_name, arm_list_to_delete):
+    bulk_drop(connection, schema_name, arm_list_to_delete)
+    
+
+def bulk_drop(connection, schema_name, bandit_arm_list, file=None):
+    """
+    Drops the index for all given bandit arms
+
+    :param connection: sql_connection
+    :param schema_name: name of the database schema
+    :param bandit_arm_list: list of bandit arms
+    :return:
+    """
+    for name, bandit_arm in bandit_arm_list.items():
+        if type(bandit_arm).__name__ == 'BanditArmMV':
+            drop_view(connection, name)
+        else:
+            drop_index(connection,  bandit_arm.index_name)
 
 
 def create_query_drop_v5(connection, schema_name, arm_list_to_add, arm_list_to_delete, queries):
@@ -194,6 +218,31 @@ def drop_index(connection, idx_name):
     logging.debug(query)
 
 
+def drop_view(connection, view_name):
+    """
+    Drops the view with the given name if it exists.
+
+    :param connection: sql_connection to the database.
+    :param view_name: The name of the view to drop.
+    :return: None
+    """
+    query = f"DROP VIEW IF EXISTS {view_name}"
+    cursor = connection.cursor()
+    try:
+        cursor.execute(query)
+        connection.commit()
+        logging.info(f"View removed: {view_name}")
+    except Exception as e:
+        # Rollback in case of error
+        connection.rollback()
+        logging.error(f"Error removing view {view_name}: {e}")
+    finally:
+        # Ensuring the cursor is closed after operation
+        cursor.close()
+    logging.debug(query)
+
+
+
 def execute_query_v2(connection, query, print_exc=True):
     """
     This executes the given query and return the time took to run the query. This Clears the cache and executes
@@ -219,35 +268,158 @@ def execute_query_v2(connection, query, print_exc=True):
         return None
 
 
+
+
 # ############################# Hyp MAB functions ##############################
 
+def hyp_check_config(connection, schema_name, arm_list_to_add, queries, file_path):
+    """
+    This method aggregate few functions of the sql helper class.
+        1. This method create the indexes related to the given bandit arms
+        2. Execute all the queries in the given list
+        3. Clean (drop) the created indexes
+        4. Finally returns the time taken to run all the queries
 
-def hyp_create_query_drop_v2(connection, schema_name, bandit_arm_list, arm_list_to_add, arm_list_to_delete, queries):
-    # Yet to implement
-    return None
+    :param connection: sql_connection
+    :param schema_name: name of the database schema
+    :param arm_list_to_add: new arms considered in this round
+    :param super_arm_list: complete arm list
+    :param queries: queries that should be executed
+    :return:
+    """
+    cost = 0
+    file = open(file_path, 'w')
+    if tables_global is None:
+        get_tables(connection)
+    cost += hyp_bulk_create(connection, schema_name, arm_list_to_add, file)
+    query_plans = []
+    hyp_enable_index(connection, file)
+    for query in queries:
+        query_plan, exe_cost = hyp_execute_query_v2(connection, query.get_query_string(hyp=True), file)
+        query_plans.append(query_plan)
+        cost += exe_cost
+        if query.first_seen == query.last_seen:
+            query.original_hyp_running_time = query_plan.sub_tree_cost
+    bulk_drop(connection, schema_name, arm_list_to_add, file)
+    file.close()
+
+    return query_plans, cost
 
 
-def hyp_bulk_create_indexes(connection, schema_name, bandit_arm_list):
-    # Yet to implement
-    return None
+
+def hyp_enable_index(connection, file):
+    """
+    This enables the hypothetical indexes for the given connection. This will be enabled for a given connection and all
+    hypothetical queries must be executed via the same connection
+    :param connection: connection for which hypothetical indexes will be enabled
+    """
+    pass
+    # query = f'''SELECT dbid = Db_id(),
+    #                 objectid = object_id,
+    #                 indid = index_id, type
+    #             FROM   sys.indexes
+    #             WHERE  is_hypothetical = 1;'''
+    # cursor = connection.cursor()
+    # cursor.execute(query)
+    # result_rows = cursor.fetchall()
+    # for result_row in result_rows:
+    #     if result_row[3] == 2:
+    #         query_2 = f"DBCC AUTOPILOT(0, {result_row[0]}, {result_row[1]}, {result_row[2]})"
+    #         cursor.execute(query_2)
+    #         file.write(query_2 + ';\n')
+    #     elif result_row[3] == 1:
+    #         query_2 = f"DBCC AUTOPILOT(6, {result_row[0]}, {result_row[1]}, {result_row[2]})"
+    #         cursor.execute(query_2)
+    #         file.write(query_2 + ';\n')
+    #     else:
+    #         print('Unknown index type')
 
 
-def hyp_create_index_v1(connection, schema_name, tbl_name, col_names, idx_name, include_cols=()):
-    # Yet to implement
-    return None
+def hyp_bulk_create(connection, schema_name, bandit_arm_list, file):
+    """
+        This uses create_index method to create multiple indexes at once. This is used when a super arm is pulled
+
+        :param connection: sql_connection
+        :param schema_name: name of the database schema
+        :param bandit_arm_list: list of BanditArm objects
+        :return: cost (regret)
+    """
+    cost = 0
+    for name, bandit_arm in bandit_arm_list.items():
+        if type(bandit_arm).__name__ == 'BanditArmMV':
+            cost += hyp_create_view(connection, bandit_arm.index_name, bandit_arm.view_query,
+                                         bandit_arm.index_query, file)
+        else:
+            cost += hyp_create_index_v1(connection, schema_name, bandit_arm.table_name, bandit_arm.index_cols,
+                                             bandit_arm.index_name, file, bandit_arm.include_cols)
+    return cost
 
 
-def hyp_enable_index(connection):
-    # Yet to implement
-    return None
+
+def hyp_create_view(connection, view_name, view_query, index_query, file):
+    # Initial view creation operation has a negligible cost. So the returned cost is from the clustered index creation.
+
+    # creates the view
+    cursor = connection.cursor()
+    cursor.execute(view_query)
+    connection.commit()
+
+    # creates the clustered index
+    cursor.execute("SET STATISTICS XML ON")
+    start_time = datetime.datetime.now()
+    cursor.execute(index_query[:-1] + " WITH STATISTICS_ONLY = -1;")
+    file.write(index_query[:-1] + " WITH STATISTICS_ONLY = -1;\n")
+    end_time = datetime.datetime.now()
+    cursor.execute("SET STATISTICS XML OFF")
+    connection.commit()
+    logging.info(f"Added and Created Hyp Clustered Index on: {view_name}")
+
+    return (end_time - start_time).total_seconds()
 
 
-def hyp_execute_query(connection, query):
-    # Yet to implement
-    return None
+def hyp_execute_query_v2(connection, query, file, print_exc=True):
+    """
+    This executes the given query in PostgreSQL and returns the time taken to run the query. It optionally clears the
+    cache (if running as a superuser) and captures the query plan using EXPLAIN (ANALYZE, BUFFERS, FORMAT XML).
+    Note: Clearing cache in PostgreSQL requires superuser access and is not recommended in production environments.
 
+    :param connection: psycopg2 connection to the PostgreSQL database
+    :param query: SQL query to be executed
+    :param file: A file object to write the executed query to
+    :param print_exc: Whether to print exception messages
+    :return: Execution plan as XML and time taken for the query in seconds
+    """
+    try:
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-# ############################# Helper function ##############################
+        # Optionally, clear cache by running on a separate superuser session:
+        # connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        # cursor.execute("SELECT pg_backend_pid();")
+        # pid = cursor.fetchone()[0]
+        # cursor.execute(f"SELECT pg_terminate_backend({pid});")
+        # connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
+
+        explain_query = f"EXPLAIN (ANALYZE, BUFFERS, FORMAT XML) {query}"
+        start_time = datetime.datetime.now()
+        cursor.execute(explain_query)
+        end_time = datetime.datetime.now()
+        
+        file.write(query + '\n')
+        execution_time = (end_time - start_time).total_seconds()
+        
+        # Fetching the XML plan generated by EXPLAIN
+        stat_xml = cursor.fetchone()[0]
+        
+        connection.commit()
+        cursor.close()
+        return stat_xml, execution_time
+    except Exception as e:
+        if print_exc:
+            print(f"Exception occurred: {e}")
+        return None, execution_time
+    
+
+    # ############################# Helper function ##############################
 
 def get_table_row_count(connection, tbl_name):
     row_query = f"SELECT reltuples as approximate_row_count FROM pg_class WHERE relname = '{tbl_name}';"
@@ -282,11 +454,15 @@ def get_current_pds_size(connection):
     :param connection: SQL Connection
     :return: size of all the physical design structures in MB
     """
-    query = '''select sum(pg_indexes_size(relid))/(1024 * 1024) AS size_mb
-                from pg_catalog.pg_statio_user_tables;'''
+
+    query = '''SELECT SUM(pg_indexes_size(relid))/(1024 * 1024) AS size_mb
+                FROM pg_catalog.pg_statio_user_tables;'''
+
     cursor = connection.cursor()
     cursor.execute(query)
-    return cursor.fetchone()[0]
+    result = cursor.fetchone()
+    print(result)
+    return result[0]
 
 
 def get_primary_key(connection, table_name):
@@ -332,6 +508,30 @@ def get_column_data_length_v2(connection, table_name, col_names):
         column_data_length += column.column_size if column.column_size else 0
 
     return column_data_length
+
+def get_table_columns(connection, table_name):
+    """
+    Get all the columns in the given table
+
+    :param connection: sql connection
+    :param table_name: table name
+    :return: dictionary of columns column name as the key
+    """
+    columns = {}
+    cursor = connection.cursor()
+    data_type_query = f"""SELECT column_name, data_type, pg_column_size(data_type)
+                          FROM information_schema.columns
+                         WHERE table_schema = 'public'
+                           AND table_name   = '{table_name}';"""
+    cursor.execute(data_type_query)
+    results = cursor.fetchall()
+    for result in results:
+        col_name = result[0]
+        column = Column(table_name, col_name, result[1])
+        column.set_column_size(int(result[2]))
+        columns[col_name] = column
+
+    return columns, len(results)
 
 
 def get_columns(connection, table_name):
@@ -383,6 +583,16 @@ def get_tables(connection):
             tables[table_name].set_columns(get_columns(connection, table_name))
         tables_global= tables
     return tables_global
+
+def get_table_list(connection, min_row_count):
+
+    get_tables(connection)
+
+    table_name_list = []
+    for table_name, table in tables_global.items():
+        if table.table_row_count > min_row_count:
+            table_name_list.append(table_name)
+    return table_name_list
 
 
 def get_estimated_size_of_index_v1(connection, schema_name, tbl_name, col_names):
@@ -467,7 +677,8 @@ def remove_all_non_clustered(connection):
 
 
 def get_table_scan_times_structure():
-    query_table_scan_times = copy.deepcopy(constants.TABLE_SCAN_TIMES[database[:-4]])
+    # query_table_scan_times = copy.deepcopy(constants.TABLE_SCAN_TIMES[database[:-4]])
+    query_table_scan_times = copy.deepcopy(constants.TABLE_SCAN_TIMES[database])
     return query_table_scan_times
 
 
